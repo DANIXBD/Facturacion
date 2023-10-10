@@ -1,0 +1,32 @@
+.menu-button {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1010; /* Ensure it's above the sidebar */
+    background-color: rgb(145, 145, 179);  /* Button background color */
+    color: white;            /* Button text color */
+    border: none;            /* Removes default border */
+    border-radius: 4px;      /* Rounds the corners */
+    padding: 10px 15px;      /* Some padding for aesthetics */
+    cursor: pointer;         /* Makes it clear it's clickable */
+    outline: none;           /* Removes focus outline for aesthetics (use with caution) */
+}
+
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s;
+    height: 100vh;
+    z-index: 1000;
+    background-color: darkgray !important; /* Menu background color */
+}
+.sidebar.open {
+    width: 250px;
+}
+
+.sidebar.closed {
+    width: 0;
+}
