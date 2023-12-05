@@ -1,8 +1,10 @@
-from flask import Flask, jsonify, request, abort
+import pandas as pd
+from flask import Flask, jsonify, request, abort, Response
 import requests
 from calendar import monthrange
 import csv
-
+from datetime import datetime, timedelta
+import re
 app = Flask(__name__)
 
 @app.route('/')
@@ -79,31 +81,45 @@ def process_csv():
 
         header_idx = -1
         for idx, row in enumerate(csv_data):
-            cleaned_row = [item.replace(" ", "").replace('"', '').upper() for item in row]  # Clean and normalize the row
+            cleaned_row = [item.replace(" ", "").replace('"', '').upper() for item in row]
             if "RECORD" in cleaned_row and "DATE" in cleaned_row and "WH3_DEL" in cleaned_row:
                 header_idx = idx
                 break
 
         if header_idx == -1:
-            raise ValueError("Header row (Record + Date) not found in CSV.")
+            raise ValueError("Header row not found in CSV.")
 
         time_idx = 2
         date_idx = 1
         wh3_del_idx = 4
 
         hourly_data = {}
+        debug_info = []  # List to store data for debugging
+
         for row in csv_data[header_idx + 1:]:
             try:
-                if not row[time_idx] or not row[date_idx]:  # Check if the "Time" or "Date" columns are empty
-                    continue  # Skip the current row if they are
+                if not row[time_idx] or not row[date_idx]:
+                    continue
 
-                time = row[time_idx]
-                hour = int(time.split(":")[0])
-                date = row[date_idx]
+                # Normalize time and date by stripping spaces
+                time = row[time_idx].strip()
+                date = row[date_idx].strip()
 
-                # Adjust logic to include data from the start of the next hour
-                if time.split(":")[1] == "00":
-                    hour = (hour - 1) % 24
+                # Split the time and handle potential formatting issues
+                time_parts = [part.strip() for part in time.split(":")]
+                hour, minute = int(time_parts[0]), int(time_parts[1])
+
+                # Check if the entry is at midnight
+                is_midnight = hour == 0 and minute == 0
+
+                # Adjust for the entry at midnight, 00:00
+                if is_midnight:
+                    date_object = datetime.strptime(date, '%m/%d/%Y') - timedelta(days=1)
+                    date = date_object.strftime('%m/%d/%Y')
+                    hour = 23
+                else:
+                    if minute == 0:
+                        hour = (hour - 1) % 24
 
                 key = f"{date}-{hour}"
                 
@@ -113,8 +129,8 @@ def process_csv():
                 wh3_del_value = float(row[wh3_del_idx]) if row[wh3_del_idx] else 0
                 hourly_data[key] += wh3_del_value
 
-                if date.strip() == '07/01/2023':
-                    print(f"Accumulated for {key}: {hourly_data[key]}")
+                # Store data for debugging
+                debug_info.append({'original_date': row[date_idx], 'original_time': row[time_idx], 'adjusted_date': date, 'adjusted_hour': hour, 'wh3_del_value': wh3_del_value})
 
             except IndexError:
                 print(f"Failed processing row: {row}")
@@ -123,10 +139,10 @@ def process_csv():
                 print(f"Error {e} occurred at row: {row}")
                 raise
 
-        for hour in range(24):
-            key = f"07/01/2023-{hour}"
-            if key in hourly_data:
-                print(f"Total for {key}: {hourly_data[key]}")
+        # Debugging: Print the last three entries in debug_info
+        print("Debugging Info: Last three sets of data processed:")
+        for debug_entry in debug_info[-3:]:
+            print(debug_entry)
 
         resulting_hourly_data = [{"fecha": k.split("-")[0], "hora": int(k.split("-")[1]), "Consumo": v/1000} for k, v in hourly_data.items()]
 
@@ -135,8 +151,95 @@ def process_csv():
     except Exception as e:
         app.logger.error(f"Error processing CSV: {e}")
         return abort(400, description=str(e))
+    
+
+ 
+
+def try_parsing_date(text):
+    for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%d-%m-%y'):
+        try:
+            return datetime.strptime(text, fmt)
+        except ValueError:
+            pass
+    raise ValueError('no valid date format found')
+
+       # Your Banxico API token
+    # token = "5634e9f0d12e881b3c6324eeaeeb68ead08313e355e77beb39a94a8cc24dfe8a"
+
+@app.route('/api/fetch_exchange_rates', methods=['POST'])
+def fetch_exchange_rates():
+    data = request.json
+    dates = data.get('dates', [])
+    print("Received dates:", dates)
 
 
+    if not dates:
+        print("Debug: No dates provided in the request")
+        abort(400, description="Please provide a 'dates' JSON array in the request body.")
+
+    token = "5634e9f0d12e881b3c6324eeaeeb68ead08313e355e77beb39a94a8cc24dfe8a"
+    exchange_rates = []
+
+    # Clean the dates list to contain only valid dates and convert to 'YYYY-MM-DD' format if necessary
+    cleaned_dates = []
+    for date in dates:
+        # Check if date is in 'YYYY-MM-DD' format
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', date):
+            try:
+                datetime.strptime(date, "%Y-%m-%d")  # check if it's a valid date
+            except ValueError as e:
+                print(f"Debug: Error parsing date {date}: {str(e)}")
+                continue
+        # Else, check if date is in 'DD-MM-YY' format and convert it
+        elif re.match(r'^\d{2}-\d{2}-\d{2}$', date):
+            try:
+                date_obj = datetime.strptime(date, "%d-%m-%y")
+                date = date_obj.strftime("%Y-%m-%d")
+            except ValueError as e:
+                print(f"Debug: Error parsing date {date}: {str(e)}")
+                continue
+        # If neither, ignore
+        else:
+            print(f"Debug: Ignoring non-date string: {date}")
+            continue
+
+
+        cleaned_dates.append(date)
+
+    # Convert the list of cleaned dates to a set to remove duplicates and then back to a list to sort them
+    unique_dates = sorted(set(cleaned_dates))
+
+    print(f"Debug: Fetching exchange rates for unique dates: {unique_dates}")
+
+    for date in unique_dates:
+        start_date = end_date = date
+
+        url = f"https://www.banxico.org.mx/SieAPIRest/service/v1/series/SF60653/datos/{start_date}/{end_date}"
+        headers = {"Bmx-Token": token}
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 200:
+            print(f"Debug: Error fetching data for date {date}. Status code: {response.status_code}")
+            continue
+
+        raw_data = response.json()
+        data = raw_data.get("bmx", {}).get("series", [{}])[0].get("datos", [])
+
+        if data:
+            rate_record = data[0]
+            exchange_rates.append({
+                "date": datetime.strptime(rate_record["fecha"], "%d/%m/%Y").isoformat(),  # Corrected to the format provided by the API
+                "rate": float(rate_record["dato"])
+            })
+
+            print(f"Debug: Successfully fetched data for date {date}: {rate_record}")
+
+    # Sort the exchange rates by date
+    exchange_rates.sort(key=lambda x: x['date'])
+
+    print(f"Debug: Finished fetching exchange rates. Total records: {len(exchange_rates)}")
+
+    return jsonify({"exchangeRates": exchange_rates})
 
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(debug=True, port=5000)
