@@ -1,0 +1,88 @@
+.container {
+    padding: 20px;
+    text-align: center; /* Centers all child elements, including text-based elements */
+}
+
+.tableTitle, .monthTitle {
+    text-align: left; /* Reset the text alignment */
+    margin-bottom: 5px; /* Adjust bottom margin to bring elements closer */
+}
+
+.leftAlignedTitle {
+    text-align: left;
+}
+
+.fileInputContainer {
+    width: 500px; /* or you can set a specific width like 200px */
+    margin: 0; /* Adjust margins as needed */
+    padding: 0; /* Adjust padding as needed */
+    display: flex; /* To align the input button nicely */
+    justify-content: center; /* Center the button horizontally */
+    align-items: center; /* Center the button vertically */
+}
+
+.fileInput {
+    width: auto; /* Ensures the input only takes up as much width as needed */
+    margin: 0; /* Optional: Adjust margin as needed */
+    padding: 5px 10px; /* Optional: Adjust padding inside the input button */
+    /* You can add more styles such as borders, colors, etc., to make the button look better */
+}
+
+.tablesFlexContainer {
+    display: flex;
+    justify-content: space-between; /* Adjusts spacing between the tables */
+    align-items: flex-start; /* Aligns tables to the top */
+    flex-wrap: wrap; /* Allows tables to wrap onto the next line on smaller screens */
+}
+
+.tableWrapper,
+.newTableWrapper {
+    flex: 1; /* Allows tables to grow and fill the space in the container */
+    min-width: 300px; /* Minimum width for each table to maintain layout */
+    margin-bottom: 0; /* Remove bottom margin to reduce space */
+}
+
+/* Adjust the h2 and h3 margins and set font size */
+h2, h3 {
+    margin-top: 0; /* Remove space above headings */
+    margin-bottom: 10px; /* Adjust bottom margin to bring elements closer */
+    padding: 0;
+    font-size: 1rem; /* Adjust as needed */
+}
+
+.exchangeRateTableWrapper {
+    width: 150px; /* Adjust the width to your preference */
+    overflow-x: auto; /* Allow scrolling if content exceeds the width */
+}
+
+.tableTitle, .monthTitle {
+    margin: 0;
+    margin-bottom: 5px; /* Adjust this value if needed */
+    padding: 0;
+    font-size: 1rem;
+}
+
+.tablesContainer {
+    display: flex;
+    gap: 20px;
+}
+
+.table {
+    font-size: 14px; /* Adjust as needed */
+}
+
+/* New class for the main title */
+.mainTitle {
+    margin-bottom: 20px; /* Optional: adds some space between the title and the content below it */
+}
+
+.tablesSideBySide {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px; /* Adjust the space between tables if necessary */
+}
+
+.newTableWrapper {
+    width: 70%; /* Adjust if needed */
+    height: auto; /* Adjust to content */
+}

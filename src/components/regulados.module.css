@@ -1,0 +1,27 @@
+/* regulados.module.css */
+.title {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.container {
+  margin: 50px;
+  height: auto; /* or set a specific height */
+  width: auto; /* or set a specific width */
+  overflow: auto; /* Adds scrollbars if the table is too large for the container */
+}
+
+
+.dropdownContainer {
+  position: relative; /* Ensures child elements with absolute positioning are positioned relative to this container */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.dropdown {
+  position: absolute; /* Positions the dropdown independently of other elements */
+  left: 500px; /* 300px away from the right side of its parent container */
+  top: 0; /* Aligns dropdown to the top of its parent container */
+}

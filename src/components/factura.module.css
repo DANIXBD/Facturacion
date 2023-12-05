@@ -1,0 +1,24 @@
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  
+  .table-container {
+    flex: 1; /* Table takes up half of the container */
+    max-width: 50%; /* Limits the width of the table */
+    margin-right: 20px; /* Optional spacing between table and chart */
+  }
+
+  
+  
+
+
+
+  .chart-container {
+    flex: 1; /* Chart takes up the remaining half */
+    height: 400px; /* Fixed height */
+    width: 600px; /* Fixed width */
+  }
+  
+  
